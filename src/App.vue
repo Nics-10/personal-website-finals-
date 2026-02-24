@@ -1,18 +1,28 @@
 <template>
   <div id="app" :class="{ 'dark-mode': isDarkMode }">
-    <LoadingIntro v-if="isLoading" @loaded="handleLoaded" />
+    <IntroLoading v-if="isLoading" @loaded="handleLoaded" />
+    
     <div v-else class="main-content">
       <ScrollProgress />
       <ParallaxBackground />
       <Navigation :isDarkMode="isDarkMode" @toggle-dark-mode="toggleDarkMode" />
-      <HeroSection />
-      <AboutSection />
-      <EducationSection />
-      <ProjectsSection />
-      <HobbiesSection />
+      
+      <Home /> 
+      
+      <AboutMe />
+      
+      <School />
+      
+      <Work />
+      
+      <Passion />
+      
       <PhotoGallery />
+      
       <ResourcesSection />
+      
       <GuestbookSection />
+      
       <Footer />
     </div>
   </div>
@@ -20,15 +30,17 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import LoadingIntro from './components/LoadingIntro.vue'
+
+// Updated Imports to match your file directory
+import IntroLoading from './components/IntroLoading.vue'
 import ScrollProgress from './components/ScrollProgress.vue'
 import ParallaxBackground from './components/ParallaxBackground.vue'
 import Navigation from './components/Navigation.vue'
-import HeroSection from './components/HeroSection.vue'
-import AboutSection from './components/AboutSection.vue'
-import EducationSection from './components/EducationSection.vue'
-import ProjectsSection from './components/ProjectsSection.vue'
-import HobbiesSection from './components/HobbiesSection.vue'
+import Home from './components/Home.vue'
+import AboutMe from './components/AboutMe.vue'
+import School from './components/School.vue'
+import Work from './components/Work.vue'
+import Passion from './components/Passion.vue'
 import PhotoGallery from './components/PhotoGallery.vue'
 import ResourcesSection from './components/ResourcesSection.vue'
 import GuestbookSection from './components/GuestbookSection.vue'
@@ -58,7 +70,9 @@ const toggleDarkMode = () => {
 #app {
   position: relative;
   min-height: 100vh;
+  /* Smooth transition for theme switching */
   transition: background-color 0.5s ease, color 0.5s ease;
+  font-family: 'Inter', sans-serif; /* Default base font */
 }
 
 .main-content {

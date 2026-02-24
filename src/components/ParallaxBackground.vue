@@ -1,17 +1,21 @@
 <template>
   <div class="parallax-background">
     <div class="parallax-layer layer-1" :style="{ transform: `translateY(${offset * 0.5}px)` }">
-      <div class="deco-star" style="top: 10%; left: 10%;">✦</div>
-      <div class="deco-star" style="top: 30%; right: 15%;">★</div>
-      <div class="deco-star" style="top: 70%; left: 20%;">✧</div>
+      <div class="doodle-star" style="top: 15%; left: 8%;">✨</div>
+      <div class="doodle-star" style="top: 45%; right: 12%;">✦</div>
+      <div class="doodle-heart" style="top: 75%; left: 15%;">♥</div>
     </div>
+
     <div class="parallax-layer layer-2" :style="{ transform: `translateY(${offset * 0.3}px)` }">
-      <div class="deco-circle" style="top: 20%; right: 10%;"></div>
-      <div class="deco-circle" style="bottom: 30%; left: 15%;"></div>
+      <div class="doodle-paperclip" style="top: 25%; right: 20%;">📎</div>
+      <div class="doodle-squiggle" style="bottom: 40%; left: 10%;">〰️</div>
+      <div class="doodle-paperclip" style="bottom: 15%; right: 25%;">📎</div>
     </div>
-    <div class="parallax-layer layer-3" :style="{ transform: `translateY(${offset * 0.2}px)` }">
-      <div class="deco-line" style="top: 40%; left: 5%;"></div>
-      <div class="deco-line" style="bottom: 20%; right: 8%;"></div>
+
+    <div class="parallax-layer layer-3" :style="{ transform: `translateY(${offset * 0.1}px)` }">
+      <div class="doodle-circle" style="top: 50%; left: 50%;"></div>
+      <div class="doodle-dots" style="top: 10%; right: 30%;">...</div>
+      <div class="doodle-dots" style="bottom: 20%; left: 30%;">...</div>
     </div>
   </div>
 </template>
@@ -42,8 +46,9 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1; /* Keep it behind everything */
   overflow: hidden;
+  transition: background-color 0.3s ease;
 }
 
 .parallax-layer {
@@ -53,53 +58,66 @@ onUnmounted(() => {
   will-change: transform;
 }
 
-.deco-star {
+.doodle-star, .doodle-heart, .doodle-paperclip, .doodle-squiggle, .doodle-dots {
   position: absolute;
+  font-family: 'Gochi Hand', cursive;
+  color: #d35400; /* Matching your Guestbook Orange */
+  opacity: 0.12;
+  transition: color 0.3s, opacity 0.3s;
+}
+
+/* Dark Mode Overrides */
+.dark-mode .doodle-star, 
+.dark-mode .doodle-heart, 
+.dark-mode .doodle-paperclip, 
+.dark-mode .doodle-squiggle,
+.dark-mode .doodle-dots {
+  color: #e67e22;
+  opacity: 0.08;
+}
+
+.doodle-star {
   font-size: 2.5rem;
-  color: var(--warm-accent);
-  opacity: 0.15;
-  animation: rotate 20s linear infinite;
+  animation: float 6s ease-in-out infinite;
 }
 
-.deco-circle {
+.doodle-heart {
+  font-size: 2rem;
+  transform: rotate(-15deg);
+}
+
+.doodle-paperclip {
+  font-size: 1.8rem;
+  transform: rotate(20deg);
+}
+
+.doodle-squiggle {
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.doodle-circle {
   position: absolute;
-  width: 80px;
-  height: 80px;
-  border: 3px solid var(--primary-blue);
+  width: 150px;
+  height: 150px;
+  border: 2px dashed #d35400;
   border-radius: 50%;
-  opacity: 0.1;
+  opacity: 0.05;
 }
 
-.deco-line {
-  position: absolute;
-  width: 120px;
-  height: 3px;
-  background: var(--warm-accent);
-  opacity: 0.15;
-  transform: rotate(-30deg);
+.dark-mode .doodle-circle {
+  border-color: #e67e22;
+  opacity: 0.03;
 }
 
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(10deg); }
 }
 
 @media (max-width: 768px) {
-  .deco-star {
-    font-size: 1.5rem;
-  }
-
-  .deco-circle {
-    width: 50px;
-    height: 50px;
-  }
-
-  .deco-line {
-    width: 80px;
-  }
+  .doodle-star { font-size: 1.5rem; }
+  .doodle-circle { width: 80px; height: 80px; }
 }
 </style>

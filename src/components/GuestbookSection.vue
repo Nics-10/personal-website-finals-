@@ -1,77 +1,93 @@
 <template>
-  <section id="guestbook" class="guestbook-section section">
+  <section id="guestbook" class="guestbook-section">
     <div class="paper-texture"></div>
+
     <div class="container">
       <div class="section-header animate-on-scroll" :class="{ 'visible': isVisible }">
-        <h2 class="section-title">Guestbook</h2>
-        <div class="title-underline"></div>
-        <p class="section-subtitle">Leave a message and share your thoughts!</p>
+        <h2 class="section-title handwritten">Guestbook</h2>
+        <div class="title-scribble"></div>
+        <p class="section-subtitle handwritten-sub">Feel free to leave a message.</p>
       </div>
 
-      <div class="guestbook-form-wrapper glassmorphism">
-        <form @submit.prevent="submitMessage" class="guestbook-form">
-          <div class="form-group">
-            <label for="name">Your Name</label>
-            <input
-              type="text"
-              id="name"
-              v-model="formData.name"
-              placeholder="Enter your name"
-              maxlength="100"
-              required
-            />
-          </div>
-          <div class="form-group">
-            <label for="message">Your Message</label>
-            <textarea
-              id="message"
-              v-model="formData.message"
-              placeholder="Share your thoughts..."
-              rows="4"
-              maxlength="500"
-              required
-            ></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary submit-btn" :disabled="isSubmitting">
-            <span v-if="!isSubmitting">Send Message</span>
-            <span v-else>Sending...</span>
-          </button>
-        </form>
-      </div>
-
-      <div v-if="showToast" class="toast-notification" :class="{ 'show': showToast }">
-        {{ toastMessage }}
-      </div>
-
-      <div class="messages-list">
-        <h3 class="messages-title">Recent Messages</h3>
-        <div v-if="isLoading" class="loading-state">
-          <div class="spinner"></div>
-          <p>Loading messages...</p>
-        </div>
-        <div v-else-if="messages.length === 0" class="empty-state">
-          <p>No messages yet. Be the first to sign the guestbook!</p>
-        </div>
-        <div v-else class="messages-grid">
-          <div
-            v-for="message in messages"
-            :key="message.id"
-            class="message-card glassmorphism"
-          >
-            <div class="message-header">
-              <div class="message-avatar">{{ getInitials(message.name) }}</div>
-              <div class="message-meta">
-                <h4 class="message-author">{{ message.name }}</h4>
-                <p class="message-date">{{ formatDate(message.created_at) }}</p>
+      <div class="guestbook-layout">
+        <div class="form-container">
+          <div class="form-scrap">
+            <div class="washi-tape-top"></div>
+            <form @submit.prevent="submitMessage" class="guestbook-form">
+              <div class="form-group">
+                <label for="name" class="ink-label">Signed by:</label>
+                <input
+                  type="text"
+                  id="name"
+                  v-model="formData.name"
+                  placeholder="Your name..."
+                  maxlength="100"
+                  required
+                />
               </div>
+              <div class="form-group">
+                <label for="message" class="ink-label">Message:</label>
+                <textarea
+                  id="message"
+                  v-model="formData.message"
+                  placeholder="Write something fun..."
+                  rows="5"
+                  maxlength="500"
+                  required
+                ></textarea>
+              </div>
+              <button type="submit" class="pin-btn" :disabled="isSubmitting">
+                <span v-if="!isSubmitting">📌 Pin Message</span>
+                <span v-else>Writing...</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="messages-container">
+          <div v-if="isLoading" class="loading-state">
+            <div class="ink-spinner"></div>
+            <p class="handwritten-sub">Reading the book...</p>
+          </div>
+          
+          <div v-else-if="messages.length === 0" class="empty-state">
+            <p class="handwritten-sub">No notes yet. Be the first to pin one!</p>
+          </div>
+
+          <div v-else class="messages-feed">
+            <div
+              v-for="(message, index) in messages"
+              :key="message.id"
+              class="message-note"
+              :style="{ transform: `rotate(${(index % 2 === 0 ? -1 : 1) * 0.5}deg)` }"
+            >
+              <div class="push-pin-icon"></div>
+              
+              <div class="note-header">
+                <div class="message-avatar">{{ getInitials(message.name) }}</div>
+                <div class="message-info">
+                  <span class="author-name">{{ message.name }}</span>
+                  <span class="note-date">{{ formatDate(message.created_at) }}</span>
+                </div>
+              </div>
+              <p class="note-text">"{{ message.message }}"</p>
             </div>
-            <p class="message-text">{{ message.message }}</p>
-            <div class="message-decoration deco-1"></div>
-            <div class="message-decoration deco-2"></div>
           </div>
         </div>
       </div>
     </div>
+
+    <Transition name="pop">
+      <div v-if="modal.show" class="modal-overlay" @click.self="closeModal">
+        <div class="modal-scrap" :class="modal.type">
+          <div class="washi-tape-modal"></div>
+          <div class="modal-icon">{{ modal.type === 'success' ? '✨' : '❌' }}</div>
+          <h3 class="handwritten">{{ modal.type === 'success' ? 'Pinned!' : 'Oops!' }}</h3>
+          <p class="handwritten-sub">{{ modal.message }}</p>
+          <button @click="closeModal" class="modal-close-btn">Close</button>
+        </div>
+      </div>
+    </Transition>
   </section>
 </template>
 
@@ -83,13 +99,11 @@ const isVisible = ref(false)
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 const messages = ref([])
-const showToast = ref(false)
-const toastMessage = ref('')
+const formData = ref({ name: '', message: '' })
 
-const formData = ref({
-  name: '',
-  message: ''
-})
+// Modal Logic
+const modal = ref({ show: false, message: '', type: 'success' })
+const closeModal = () => { modal.value.show = false }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
@@ -99,408 +113,207 @@ const fetchMessages = async () => {
     const response = await axios.get(`${API_URL}/guestbook`)
     messages.value = response.data
   } catch (error) {
-    console.error('Error fetching messages:', error)
-    showToastMessage('Failed to load messages')
+    console.error('Error:', error)
   } finally {
     isLoading.value = false
   }
 }
 
 const submitMessage = async () => {
-  if (!formData.value.name || !formData.value.message) {
-    showToastMessage('Please fill in all fields')
-    return
-  }
-
+  if (!formData.value.name || !formData.value.message) return
   try {
     isSubmitting.value = true
-    const response = await axios.post(`${API_URL}/guestbook`, {
-      name: formData.value.name,
-      message: formData.value.message
-    })
-
+    const response = await axios.post(`${API_URL}/guestbook`, formData.value)
     messages.value.unshift(response.data)
-
-    formData.value.name = ''
-    formData.value.message = ''
-    showToastMessage('Message sent successfully! ✨')
+    formData.value = { name: '', message: '' }
+    
+    // Success Pop-up
+    modal.value = { 
+      show: true, 
+      message: 'Your note has been added to the diary.', 
+      type: 'success' 
+    }
   } catch (error) {
-    console.error('Error submitting message:', error)
-    showToastMessage('Failed to send message. Please try again.')
+    // Error Pop-up
+    modal.value = { 
+      show: true, 
+      message: 'Failed to send message. Please check your connection.', 
+      type: 'error' 
+    }
   } finally {
     isSubmitting.value = false
   }
 }
 
-const showToastMessage = (message) => {
-  toastMessage.value = message
-  showToast.value = true
-  setTimeout(() => {
-    showToast.value = false
-  }, 3000)
-}
-
-const getInitials = (name) => {
-  return name
-    .split(' ')
-    .map(word => word[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
-const formatDate = (dateString) => {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInSeconds = Math.floor((now - date) / 1000)
-
-  if (diffInSeconds < 60) return 'Just now'
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`
-
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const getInitials = (name) => name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+const formatDate = (ds) => {
+  const d = new Date(ds);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 onMounted(() => {
   fetchMessages()
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          isVisible.value = true
-        }
-      })
-    },
-    { threshold: 0.1 }
-  )
-
-  const section = document.getElementById('guestbook')
-  if (section) {
-    observer.observe(section)
-  }
+  isVisible.value = true
 })
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Architects_Daughter&display=swap');
+
 .guestbook-section {
-  background: linear-gradient(135deg, #e8eef5 0%, var(--soft-white) 100%);
+  background-color: #fdfaf5;
+  padding: 80px 0;
   min-height: 100vh;
+  transition: background-color 0.3s ease;
 }
 
+/* DARK MODE STYLES */
 .dark-mode .guestbook-section {
-  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  background-color: #121212;
 }
 
-.section-header {
-  text-align: center;
-  margin-bottom: 50px;
-  opacity: 0;
-  transform: translateY(30px);
-  transition: all 0.8s ease;
-}
-
-.section-header.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.section-title {
-  font-size: 3rem;
-  color: var(--deep-charcoal);
-  margin-bottom: 15px;
-}
-
-.dark-mode .section-title {
-  color: var(--soft-white);
-}
-
-.title-underline {
-  width: 100px;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary-blue), var(--warm-accent));
-  margin: 0 auto 20px;
-  border-radius: 2px;
-}
-
-.section-subtitle {
-  font-size: 1.1rem;
-  color: #666;
-}
-
-.dark-mode .section-subtitle {
-  color: #aaa;
-}
-
-.guestbook-form-wrapper {
-  max-width: 600px;
-  margin: 0 auto 60px;
-  padding: 40px;
-  border-radius: 25px;
-}
-
-.guestbook-form {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.form-group label {
-  font-weight: 600;
-  color: var(--deep-charcoal);
-  font-size: 1rem;
-}
-
-.dark-mode .form-group label {
-  color: var(--soft-white);
-}
-
-.form-group input,
-.form-group textarea {
-  padding: 15px 20px;
-  border: 2px solid rgba(59, 89, 152, 0.2);
-  border-radius: 15px;
-  font-size: 1rem;
-  font-family: 'Roboto', sans-serif;
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--deep-charcoal);
-}
-
-.dark-mode .form-group input,
-.dark-mode .form-group textarea {
-  background: rgba(42, 42, 42, 0.8);
-  color: var(--soft-white);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--primary-blue);
-  box-shadow: 0 0 0 3px rgba(59, 89, 152, 0.1);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-.submit-btn {
-  align-self: flex-start;
-  padding: 15px 40px;
-  font-size: 1.05rem;
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.toast-notification {
-  position: fixed;
-  top: 100px;
-  right: 30px;
-  background: var(--primary-blue);
-  color: white;
-  padding: 18px 30px;
-  border-radius: 15px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  transform: translateX(400px);
-  transition: transform 0.4s ease;
-  font-weight: 500;
-}
-
-.toast-notification.show {
-  transform: translateX(0);
-  animation: slideIn 0.4s ease;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(400px);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-.messages-list {
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.messages-title {
-  font-size: 2rem;
-  color: var(--deep-charcoal);
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-.dark-mode .messages-title {
-  color: var(--soft-white);
-}
-
-.loading-state,
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: #666;
-}
-
-.dark-mode .loading-state,
-.dark-mode .empty-state {
-  color: #aaa;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(59, 89, 152, 0.2);
-  border-top-color: var(--primary-blue);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.messages-grid {
+.guestbook-layout {
   display: grid;
-  gap: 25px;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 50px;
+  max-width: 1200px;
+  margin: 40px auto 0;
+  padding: 0 20px;
 }
 
-.message-card {
+.form-scrap, .message-note, .modal-scrap {
+  background: #ffffff;
+  border: 1px solid #eee;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.dark-mode .form-scrap, 
+.dark-mode .message-note,
+.dark-mode .modal-scrap {
+  background: #1e1e1e;
+  border-color: #333;
+  color: #e0e0e0;
+}
+
+.form-scrap {
+  padding: 40px;
+  box-shadow: 10px 10px 0px rgba(0,0,0,0.03);
+  position: sticky;
+  top: 100px;
+  transform: rotate(-1deg);
+}
+
+.message-note {
   padding: 30px;
-  border-radius: 20px;
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.02);
   position: relative;
-  overflow: hidden;
-  animation: messageEnter 0.5s ease;
+  clip-path: polygon(0% 0%, 100% 0%, 98% 100%, 2% 98%);
+  margin-bottom: 25px;
 }
 
-@keyframes messageEnter {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.washi-tape-top {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 130px;
+  height: 35px;
+  background: rgba(211, 84, 0, 0.2);
+  backdrop-filter: blur(1px);
 }
 
-.message-header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
+.ink-label {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 1.4rem;
+  color: #d35400;
 }
 
-.message-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-blue), var(--warm-accent));
+.guestbook-form input, 
+.guestbook-form textarea {
+  width: 100%;
+  border: none;
+  border-bottom: 1px dashed #ccc;
+  padding: 12px 0;
+  margin-bottom: 30px;
+  background: transparent;
+  font-family: 'Architects Daughter', cursive;
+  color: inherit;
+  outline: none;
+}
+
+.pin-btn {
+  background: #d35400;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  font-family: 'Gochi Hand', cursive;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2000;
+}
+
+.modal-scrap {
+  padding: 40px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  position: relative;
+  box-shadow: 15px 15px 0px rgba(0,0,0,0.1);
+}
+
+.modal-icon { font-size: 2rem; margin-bottom: 10px; }
+.modal-scrap.error h3 { color: #e74c3c; }
+.modal-scrap.success h3 { color: #27ae60; }
+
+.modal-close-btn {
+  margin-top: 20px;
+  background: #333;
   color: white;
-  font-weight: bold;
-  font-size: 1.1rem;
+  border: none;
+  padding: 8px 25px;
+  font-family: 'Gochi Hand', cursive;
+  cursor: pointer;
+}
+.dark-mode .modal-close-btn { background: #d35400; }
+
+.push-pin-icon {
+  position: absolute; top: 10px; right: 15px;
+  width: 12px; height: 12px;
+  background: #e74c3c; border-radius: 50%;
 }
 
-.message-meta {
-  flex: 1;
+.message-avatar {
+  width: 45px; height: 45px; border-radius: 50%;
+  background: #fdfaf5; border: 1px dashed #d35400;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Gochi Hand', cursive; color: #d35400;
+}
+.dark-mode .message-avatar { background: #252525; }
+
+.author-name { font-family: 'Gochi Hand', cursive; font-size: 1.3rem; }
+.note-text { font-family: 'Architects Daughter', cursive; line-height: 1.5; }
+.handwritten { font-family: 'Gochi Hand', cursive; font-size: 3.5rem; text-align: center; }
+.handwritten-sub { font-family: 'Architects Daughter', cursive; text-align: center; }
+
+/* ANIMATIONS */
+.pop-enter-active { animation: pop-in 0.4s cubic-bezier(0.26, 0.53, 0.74, 1.48); }
+.pop-leave-active { animation: pop-in 0.3s reverse ease-in; }
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.5) rotate(5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
 }
 
-.message-author {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--deep-charcoal);
-  margin-bottom: 3px;
-}
-
-.dark-mode .message-author {
-  color: var(--soft-white);
-}
-
-.message-date {
-  font-size: 0.85rem;
-  color: #666;
-}
-
-.dark-mode .message-date {
-  color: #999;
-}
-
-.message-text {
-  font-size: 1rem;
-  line-height: 1.7;
-  color: var(--deep-charcoal);
-}
-
-.dark-mode .message-text {
-  color: var(--soft-white);
-}
-
-.message-decoration {
-  position: absolute;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-blue), var(--warm-accent));
-  opacity: 0.08;
-  pointer-events: none;
-}
-
-.deco-1 {
-  width: 100px;
-  height: 100px;
-  top: -30px;
-  right: -30px;
-}
-
-.deco-2 {
-  width: 80px;
-  height: 80px;
-  bottom: -20px;
-  left: -20px;
-}
-
-@media (max-width: 768px) {
-  .section-title {
-    font-size: 2rem;
-  }
-
-  .guestbook-form-wrapper {
-    padding: 30px 20px;
-  }
-
-  .submit-btn {
-    width: 100%;
-  }
-
-  .toast-notification {
-    right: 15px;
-    left: 15px;
-  }
-
-  .messages-title {
-    font-size: 1.5rem;
-  }
-
-  .message-card {
-    padding: 20px;
-  }
+@media (max-width: 900px) {
+  .guestbook-layout { grid-template-columns: 1fr; }
+  .form-scrap { position: relative; top: 0; margin-bottom: 40px; }
 }
 </style>
