@@ -59,7 +59,7 @@
               v-for="(message, index) in messages"
               :key="message.id"
               class="message-note"
-              :style="{ transform: `rotate(${(index % 2 === 0 ? -1 : 1) * 0.5}deg)` }"
+              :style="{ transform: `rotate(${(index % 2 === 0 ? -1.5 : 1.5)}deg)` }"
             >
               <div class="push-pin-icon"></div>
               
@@ -70,7 +70,10 @@
                   <span class="note-date">{{ formatDate(message.created_at) }}</span>
                 </div>
               </div>
-              <p class="note-text">"{{ message.message }}"</p>
+
+              <div class="note-body">
+                <p class="note-text">"{{ message.message }}"</p>
+              </div>
             </div>
           </div>
         </div>
@@ -93,27 +96,33 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 const isVisible = ref(false)
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 const messages = ref([])
 const formData = ref({ name: '', message: '' })
-
-// Modal Logic
 const modal = ref({ show: false, message: '', type: 'success' })
-const closeModal = () => { modal.value.show = false }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const closeModal = () => { modal.value.show = false }
 
 const fetchMessages = async () => {
   try {
     isLoading.value = true
-    const response = await axios.get(`${API_URL}/guestbook`)
-    messages.value = response.data
+    const { data, error } = await supabase
+      .from('guestbook')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    messages.value = data
   } catch (error) {
-    console.error('Error:', error)
+    console.error(error)
   } finally {
     isLoading.value = false
   }
@@ -121,20 +130,25 @@ const fetchMessages = async () => {
 
 const submitMessage = async () => {
   if (!formData.value.name || !formData.value.message) return
+  
   try {
     isSubmitting.value = true
-    const response = await axios.post(`${API_URL}/guestbook`, formData.value)
-    messages.value.unshift(response.data)
+    const { data, error } = await supabase
+      .from('guestbook')
+      .insert([{ name: formData.value.name, message: formData.value.message }])
+      .select()
+
+    if (error) throw error
+
+    messages.value.unshift(data[0])
     formData.value = { name: '', message: '' }
     
-    // Success Pop-up
     modal.value = { 
       show: true, 
       message: 'Your note has been added to the diary.', 
       type: 'success' 
     }
   } catch (error) {
-    // Error Pop-up
     modal.value = { 
       show: true, 
       message: 'Failed to send message. Please check your connection.', 
@@ -145,10 +159,15 @@ const submitMessage = async () => {
   }
 }
 
-const getInitials = (name) => name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+const getInitials = (name) => {
+  if (!name) return '?'
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+}
+
 const formatDate = (ds) => {
-  const d = new Date(ds);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (!ds) return ''
+  const d = new Date(ds)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 onMounted(() => {
@@ -165,9 +184,9 @@ onMounted(() => {
   padding: 80px 0;
   min-height: 100vh;
   transition: background-color 0.3s ease;
+  position: relative;
 }
 
-/* DARK MODE STYLES */
 .dark-mode .guestbook-section {
   background-color: #121212;
 }
@@ -183,8 +202,8 @@ onMounted(() => {
 
 .form-scrap, .message-note, .modal-scrap {
   background: #ffffff;
-  border: 1px solid #eee;
-  transition: background-color 0.3s, border-color 0.3s;
+  border: 1px solid rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
 }
 
 .dark-mode .form-scrap, 
@@ -203,12 +222,23 @@ onMounted(() => {
   transform: rotate(-1deg);
 }
 
+.messages-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 35px;
+  padding: 10px;
+}
+
 .message-note {
-  padding: 30px;
-  box-shadow: 5px 5px 15px rgba(0,0,0,0.02);
+  padding: 25px;
+  box-shadow: 5px 8px 15px rgba(0,0,0,0.05);
   position: relative;
-  clip-path: polygon(0% 0%, 100% 0%, 98% 100%, 2% 98%);
-  margin-bottom: 25px;
+  clip-path: polygon(0% 0%, 100% 0%, 99% 100%, 1% 99%);
+}
+
+.message-note:hover {
+  transform: scale(1.02) rotate(0deg) !important;
+  z-index: 10;
 }
 
 .washi-tape-top {
@@ -251,6 +281,78 @@ onMounted(() => {
   cursor: pointer;
 }
 
+.note-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #e0e0e0;
+}
+
+.message-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.author-name {
+  font-family: 'Gochi Hand', cursive;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #d35400;
+}
+
+.note-date {
+  font-family: 'Architects Daughter', cursive;
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 4px;
+}
+
+.note-body {
+  padding: 5px 0;
+}
+
+.note-text {
+  font-family: 'Architects Daughter', cursive;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: #333;
+  text-align: left;
+}
+
+.dark-mode .note-text { color: #e0e0e0; }
+
+.push-pin-icon {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  background: #e74c3c;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  z-index: 2;
+}
+
+.message-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: #fdfaf5;
+  border: 1px dashed #d35400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Gochi Hand', cursive;
+  color: #d35400;
+  flex-shrink: 0;
+}
+
+.dark-mode .message-avatar { background: #252525; }
+
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
@@ -270,43 +372,12 @@ onMounted(() => {
   box-shadow: 15px 15px 0px rgba(0,0,0,0.1);
 }
 
-.modal-icon { font-size: 2rem; margin-bottom: 10px; }
-.modal-scrap.error h3 { color: #e74c3c; }
-.modal-scrap.success h3 { color: #27ae60; }
-
-.modal-close-btn {
-  margin-top: 20px;
-  background: #333;
-  color: white;
-  border: none;
-  padding: 8px 25px;
-  font-family: 'Gochi Hand', cursive;
-  cursor: pointer;
-}
-.dark-mode .modal-close-btn { background: #d35400; }
-
-.push-pin-icon {
-  position: absolute; top: 10px; right: 15px;
-  width: 12px; height: 12px;
-  background: #e74c3c; border-radius: 50%;
-}
-
-.message-avatar {
-  width: 45px; height: 45px; border-radius: 50%;
-  background: #fdfaf5; border: 1px dashed #d35400;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Gochi Hand', cursive; color: #d35400;
-}
-.dark-mode .message-avatar { background: #252525; }
-
-.author-name { font-family: 'Gochi Hand', cursive; font-size: 1.3rem; }
-.note-text { font-family: 'Architects Daughter', cursive; line-height: 1.5; }
 .handwritten { font-family: 'Gochi Hand', cursive; font-size: 3.5rem; text-align: center; }
 .handwritten-sub { font-family: 'Architects Daughter', cursive; text-align: center; }
 
-/* ANIMATIONS */
 .pop-enter-active { animation: pop-in 0.4s cubic-bezier(0.26, 0.53, 0.74, 1.48); }
 .pop-leave-active { animation: pop-in 0.3s reverse ease-in; }
+
 @keyframes pop-in {
   0% { opacity: 0; transform: scale(0.5) rotate(5deg); }
   100% { opacity: 1; transform: scale(1) rotate(0deg); }
@@ -314,6 +385,6 @@ onMounted(() => {
 
 @media (max-width: 900px) {
   .guestbook-layout { grid-template-columns: 1fr; }
-  .form-scrap { position: relative; top: 0; margin-bottom: 40px; }
+  .form-scrap { position: relative; top: 0; margin-bottom: 40px; transform: none; }
 }
 </style>
