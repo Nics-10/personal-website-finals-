@@ -10,7 +10,7 @@
         <span class="separator">✦</span>
         <a href="http://www.linkedin.com/in/neichaela-padilla-97ab3b322" target="_blank" rel="noopener noreferrer">LinkedIn</a>
         <span class="separator">✦</span>
-        <a href="mailto:neichaela10@gmail.com">Email</a>
+        <a href="neichaela10@gmail.com">Email</a>
         <span class="separator">✦</span>
         <a href="https://github.com/Nics-10" target="_blank" rel="noopener noreferrer">GitHub</a>
         <span class="separator">✦</span>
