@@ -10,8 +10,9 @@
     "backend:build": "cd backend && npm run build"
   },
   "dependencies": {
-    "vue": "^3.4.21",
-    "axios": "^1.6.7"
+    "@supabase/supabase-js": "^2.97.0",
+    "axios": "^1.6.7",
+    "vue": "^3.4.21"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
